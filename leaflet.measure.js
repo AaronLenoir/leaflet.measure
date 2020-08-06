@@ -138,7 +138,8 @@ L.Control.Measure = L.Control.extend({
       }
       this._updateTooltipPosition(e.latlng)
       var distance = e.latlng.distanceTo(this._lastPoint)
-      this._updateTooltipDistance(this._distance + distance, distance)
+      var bearing = this._getBearing(this._lastPoint, e.latlng)
+      this._updateTooltipDistance(this._distance + distance, distance, bearing)
     }
   },
 
@@ -159,7 +160,8 @@ L.Control.Measure = L.Control.extend({
 
       this._updateTooltipPosition(e.latlng)
       var distance = e.latlng.distanceTo(this._lastPoint)
-      this._updateTooltipDistance(this._distance + distance, distance)
+      var bearing = this._getBearing(this._lastPoint, e.latlng)
+      this._updateTooltipDistance(this._distance + distance, distance, bearing)
 
       this._distance += distance
     }
@@ -252,17 +254,20 @@ L.Control.Measure = L.Control.extend({
     this._tooltip.setLatLng(position)
   },
 
-  _updateTooltipDistance: function (total, difference) {
+  _updateTooltipDistance: function (total, difference, bearing) {
     if (!this._tooltip._icon) {
       return
     }
     var totalRound = this._formatDistance(total)
     var differenceRound = this._formatDistance(difference)
+    var bearingRound = this._formatBearing(bearing)
 
-    var text = '<div class="leaflet-measure-tooltip-total" style="color:'+ this.options.textColor +'">' + totalRound + '</div>'
-    if (differenceRound > 0 && totalRound !== differenceRound) {
+    //var text = '<div class="leaflet-measure-tooltip-total" style="color:'+ this.options.textColor +'">' + totalRound + '</div>'
+    var text = `<div class="leaflet-measure-tooltip-total" style="color:${this.options.textColor}">${totalRound}</div>`
+    if (difference > 0 && totalRound !== differenceRound) {
       text += '<div class="leaflet-measure-tooltip-difference" style="color:'+ this.options.textColor +'">(+' + differenceRound + ')</div>'
     }
+    text += `<div>${bearingRound}</div>`
     this._tooltip._icon.innerHTML = text
   },
 
@@ -275,6 +280,14 @@ L.Control.Measure = L.Control.extend({
     } else {
       return Math.round((val / 1000) * 100) / 100 + 'km'
     }
+  },
+
+  _formatBearing: function (bearing) {
+    if (typeof this.options.formatBearing === 'function') {
+      return this.options.formatBearing(val);
+    }
+    
+    return `${Math.round(bearing)} °`;
   },
 
   _onKeyDown: function (e) {
@@ -297,6 +310,30 @@ L.Control.Measure = L.Control.extend({
         }
         break
     }
+  },
+
+  /**
+   * Modified function from: https://makinacorpus.github.io/Leaflet.GeometryUtil/leaflet.geometryutil.js.html
+   * 
+   * Returns the bearing in degrees clockwise from north (0 degrees)
+   * from the first L.LatLng to the second, at the first LatLng
+   * @param {L.LatLng} latlng1: origin point of the bearing
+   * @param {L.LatLng} latlng2: destination point of the bearing
+   * @returns {float} degrees clockwise from north.
+   */
+  _getBearing: function (latlng1, latlng2) {
+    var rad = Math.PI / 180,
+      lat1 = latlng1.lat * rad,
+      lat2 = latlng2.lat * rad,
+      lon1 = latlng1.lng * rad,
+      lon2 = latlng2.lng * rad,
+      y = Math.sin(lon2 - lon1) * Math.cos(lat2),
+      x = Math.cos(lat1) * Math.sin(lat2) -
+          Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon2 - lon1);
+
+    var bearing = ((Math.atan2(y, x) * 180 / Math.PI) + 360) % 360;
+
+    return bearing;
   }
 })
 
