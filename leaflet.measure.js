@@ -282,12 +282,12 @@ L.Control.Measure = L.Control.extend({
     }
   },
 
-  _formatBearing: function (bearing) {
+  _formatBearing: function (val) {
     if (typeof this.options.formatBearing === 'function') {
       return this.options.formatBearing(val);
     }
     
-    return `${Math.round(bearing)} °`;
+    return `${Math.round(val)}°`;
   },
 
   _onKeyDown: function (e) {
